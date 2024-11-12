@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option go_package = "handin5/grpc/proto";
+
+
+service BiddingService {
+    rpc PlaceBid (BidRequest) returns (BidResponse);
+    rpc GetResult (ResultRequest) returns (ResultResponse);
+}
+
+message BidRequest {
+    int32 amount = 1;
+}
+
+message BidResponse {
+    AckStatus ack = 1;
+    string comment = 2;
+}
+
+message ResultRequest {
+}
+
+message ResultResponse {
+    string winner = 1;
+}
+
+enum AckStatus {
+    FAIL = 0;
+    SUCCESS = 1;
+    EXCEPTION = 2;
+}
+
+
