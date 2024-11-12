@@ -6,6 +6,7 @@ option go_package = "handin5/grpc/proto";
 service BiddingService {
     rpc PlaceBid (BidRequest) returns (BidResponse);
     rpc GetResult (ResultRequest) returns (ResultResponse);
+    rpc GetHighestBid(HighestBidRequest) returns (HighestBidResponse);
 }
 
 message BidRequest {
@@ -23,6 +24,17 @@ message ResultRequest {
 message ResultResponse {
     string winner = 1;
 }
+
+message HighestBidRequest {
+
+}
+
+message HighestBidResponse {
+    int32 HighesBid = 1;
+}
+
+
+
 
 enum AckStatus {
     FAIL = 0;
