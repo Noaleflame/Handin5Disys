@@ -1,17 +1,18 @@
-package node
+package main
 
 import (
 	"context"
 	"fmt"
 	proto "handin5/grpc"
 	"log"
-	"rand"
+	"math/rand"
 	"time"
 
 	"google.golang.org/grpc"
 )
 
 type Node struct {
+	NodeID string;
 	CurrentHighestBid int32;
 	CurrentBid int32;
 	Balance int32;
@@ -21,6 +22,9 @@ type Node struct {
 }
 
 func randomIntBetween(min int32, max int32) int32 {
+	if (min >= max) {
+		panic("Invalid range: min must be less than max")
+	}
 	rand.Seed(time.Now().UnixNano())
 	var randomNumber int32
 	randomNumber = min + rand.Int31n(max-min+1)
@@ -36,8 +40,8 @@ func (n *Node) PlaceBid(client proto.BiddingServiceClient) {
 		amount = randomIntBetween(0, n.Balance/2)
 	} else {
 		//Else bid amount will be between currentHighestBid and balance
-		//amount := randomIntBetween(currentBid, balance)
-		amount = randomIntBetween(n.CurrentHighestBid, n.Balance)
+		amount = randomIntBetween(n.CurrentHighestBid, n.CurrentHighestBid + 100)
+		//amount = randomIntBetween(n.CurrentHighestBid, n.Balance)
 	}
 	resp, err := client.PlaceBid(context.Background(), &proto.BidRequest{Amount: amount})
 	if err != nil {
@@ -48,7 +52,7 @@ func (n *Node) PlaceBid(client proto.BiddingServiceClient) {
     case proto.AckStatus_SUCCESS:
 		n.TimesBidded++
 		n.CurrentBid = amount
-        fmt.Printf("Bid placed successfully: %s\n", resp.Comment)
+        //fmt.Printf("Bid placed successfully: %s\n", resp.Comment)
 
     case proto.AckStatus_FAIL:
         fmt.Printf("Bid failed: %s\n", resp.Comment)
@@ -67,7 +71,14 @@ func (n *Node) GetHighestBid(client proto.BiddingServiceClient) {
     }
 
 	n.CurrentHighestBid = resp.GetHighesBid()
+}
 
+func (n *Node) GetTimesBidded(client proto.BiddingServiceClient) {
+	resp, err := client.GetTimesBidded(context.Background(), &proto.TimesBiddedRequest{})
+	if err != nil {
+        log.Fatalf("failed to get Times bidded: %v", err)
+    }
+	n.TimesBidded = resp.GetTimesBidded()
 }
 
 func main () {
@@ -82,8 +93,23 @@ func main () {
 	fmt.Println("Successfully connected to the server at localhost:50051")
 
 	node := &Node{
-		Balance: 1000, // Example balance
+		TimesBidded: 0,
+		Balance: randomIntBetween(1000,10000),
 	}
+	fmt.Printf("BALANCE: %v\n", node.Balance)
 
+	for {
+	node.GetTimesBidded(client)
 	node.GetHighestBid(client)
+	if(node.CurrentBid == node.CurrentHighestBid && node.TimesBidded > 0) {
+		continue
+	}
+	if(node.CurrentHighestBid <= node.Balance) {
+		node.PlaceBid(client)
+		fmt.Printf("This is the current bid : ")
+		fmt.Println(node.CurrentBid)
+	}
+	//fmt.Print("NodeID  " + node.NodeID)
+	time.Sleep(4 * time.Second)
+	}
 }

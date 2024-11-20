@@ -7,6 +7,14 @@ service BiddingService {
     rpc PlaceBid (BidRequest) returns (BidResponse);
     rpc GetResult (ResultRequest) returns (ResultResponse);
     rpc GetHighestBid(HighestBidRequest) returns (HighestBidResponse);
+    rpc GetTimesBidded(TimesBiddedRequest) returns (TimesBiddedResponse);
+}
+
+message TimesBiddedRequest{
+
+}
+message TimesBiddedResponse {
+    int32 timesBidded = 1;
 }
 
 message BidRequest {
