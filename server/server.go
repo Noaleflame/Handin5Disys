@@ -33,14 +33,13 @@ func (s *Server) BeginAuction() {
 
 func (s *Server) StopAuction() {
 	s.AuctionOngoing = false
-	fmt.Printf("Highest bid was: %d\n", s.CurrentHighestBid)
 }
 
 func (s *Server) resetTimer() {
 	if s.bidTimer != nil {
 		s.bidTimer.Stop()
 	}
-	s.bidTimer = time.AfterFunc(60*time.Second, func() {
+	s.bidTimer = time.AfterFunc(15*time.Second, func() {
 		fmt.Println("No bids received in the last 15 seconds.")
 		s.StopAuction()
 	})
@@ -78,8 +77,6 @@ func (s *Server) PlaceBid(ctx context.Context, req *proto.BidRequest) (*proto.Bi
 	s.TimesBidded++
 	s.resetTimer()
 
-	// Notify replicas about the new highest bid
-	s.notifyReplicas(req.Amount, s.TimesBidded)
 
 	return &proto.BidResponse{
 		Ack:     proto.AckStatus_SUCCESS,
@@ -96,20 +93,7 @@ func (s *Server) isNodeRegistered(nodeID string) bool {
 	return false
 }
 
-func (s *Server) notifyReplicas(amount int32, timesBidded int32) {
-	for _, replica := range s.replicas {
-		_, err := replica.UpdateHighestBid(context.Background(), &proto.UpdateBidRequest{
-			NewHighestBid: amount,
-			TimesBidded:   timesBidded,
-		})
-		if err != nil {
-			fmt.Println("Failed to notify a replica:", err)
-		}
-	}
-}
-
 func (s *Server) Ping(ctx context.Context, req *proto.PingRequest) (*proto.PingResponse, error) {
-    fmt.Println("Received Ping from Replica")
     return &proto.PingResponse{Alive: true}, nil
 }
 

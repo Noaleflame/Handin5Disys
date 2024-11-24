@@ -58,6 +58,10 @@ func (s *ReplicaServer) GetIsAuctionOngoing(ctx context.Context, req *proto.Requ
 	return &proto.ResponseIsAuctionOngoing{AuctionStillGoing: s.AuctionOngoing}, nil
 }
 
+func (s *ReplicaServer) GetResult(ctx context.Context, req *proto.ResultRequest) (*proto.ResultResponse, error) {
+	return &proto.ResultResponse{WinnerBid: s.CurrentHighestBid}, nil
+}
+
 
 func (s *ReplicaServer) requestPrimaryUpdates() {
 	// This will request the primary server to get the current highest bid and times bidded
@@ -116,10 +120,7 @@ func (s *ReplicaServer) PlaceBid(ctx context.Context, req *proto.BidRequest) (*p
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	fmt.Print("Request bid amount! ")
-	fmt.Println(req.Amount)
-	fmt.Print("Current highest bid! ")
-	fmt.Println(s.CurrentHighestBid)
+	
 
 	if req.Amount <= s.CurrentHighestBid {
 		return &proto.BidResponse{
@@ -145,7 +146,7 @@ func (s *ReplicaServer) resetTimer() {
 	if s.bidTimer != nil {
 		s.bidTimer.Stop()
 	}
-	s.bidTimer = time.AfterFunc(60*time.Second, func() {
+	s.bidTimer = time.AfterFunc(15*time.Second, func() {
 		fmt.Println("No bids received in the last 15 seconds.")
 		s.StopAuction()
 	})

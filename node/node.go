@@ -59,7 +59,6 @@ func (n *Node) PlaceBid() {
 	case proto.AckStatus_FAIL:
 		fmt.Printf("Bid failed: %s\n", resp.Comment)
 		fmt.Print("Bid failed with this amount ")
-		fmt.Println(amount)
 	case proto.AckStatus_EXCEPTION:
 		fmt.Printf("Exception occurred: %s\n", resp.Comment)
 	default:
@@ -205,8 +204,6 @@ func main() {
 			node.GetTimesBidded()
 			node.ping(replicaServerAddress, err)
 			node.GetHighestBid()
-			//fmt.Print("This is the highestBid ")
-			fmt.Print(node.CurrentHighestBid)
 			node.ping(replicaServerAddress, err)
 
 
@@ -224,7 +221,7 @@ func main() {
 			if node.CurrentHighestBid < node.Balance {
 				node.PlaceBid()
 				fmt.Println()
-				fmt.Printf("This is the current bid : %v\n", node.CurrentBid)
+				fmt.Printf("Placing bid : %v\n", node.CurrentBid)
 			}
 			node.ping(replicaServerAddress, err)
 
