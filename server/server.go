@@ -23,8 +23,7 @@ type Server struct {
 	replicas          []proto.BiddingServiceClient
 	NodesId           []string
 	mu                sync.Mutex
-	logger      *log.Logger
-
+	logger            *log.Logger
 }
 
 func (s *Server) BeginAuction() {
@@ -81,7 +80,6 @@ func (s *Server) PlaceBid(ctx context.Context, req *proto.BidRequest) (*proto.Bi
 	s.TimesBidded++
 	s.resetTimer()
 
-
 	return &proto.BidResponse{
 		Ack:     proto.AckStatus_SUCCESS,
 		Comment: "The bid was successful",
@@ -98,14 +96,12 @@ func (s *Server) isNodeRegistered(nodeID string) bool {
 }
 
 func (s *Server) Ping(ctx context.Context, req *proto.PingRequest) (*proto.PingResponse, error) {
-    return &proto.PingResponse{Alive: true}, nil
+	return &proto.PingResponse{Alive: true}, nil
 }
-
 
 func (s *Server) GetIsAuctionOngoing(ctx context.Context, req *proto.RequestIsAuctionOngoing) (*proto.ResponseIsAuctionOngoing, error) {
 	return &proto.ResponseIsAuctionOngoing{AuctionStillGoing: s.AuctionOngoing}, nil
 }
-
 
 func main() {
 	logFile, err := os.OpenFile("../serverLogUser.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
@@ -114,7 +110,6 @@ func main() {
 	}
 	defer logFile.Close()
 
-	// Creates a new logger that writes to the file
 	logger := log.New(logFile, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	listener, err := net.Listen("tcp", ":50051")
@@ -124,7 +119,6 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	server := &Server{}
-	server.logger = logger
 
 	proto.RegisterBiddingServiceServer(grpcServer, server)
 
