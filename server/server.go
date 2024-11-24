@@ -124,6 +124,7 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	server := &Server{}
+	server.logger = logger
 
 	proto.RegisterBiddingServiceServer(grpcServer, server)
 

@@ -174,7 +174,7 @@ func (s *ReplicaServer) Ping(ctx context.Context, req *proto.PingRequest) (*prot
 }
 
 func main() {
-	logFile, err := os.OpenFile("serverLogUser.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	logFile, err := os.OpenFile("../serverLogUser.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening log file: %v", err)
 	}
@@ -198,6 +198,7 @@ func main() {
 		isLeader:      false,
 		AuctionOngoing: true,
 		TimesBidded: 0,
+		logger:          logger,
 	}
 
 	go replica.heartbeat()

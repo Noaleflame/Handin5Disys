@@ -181,15 +181,25 @@ func main() {
 	clientID := os.Args[1]
 	primaryServerAddress := "localhost:50051" // This should be the address of the current primary server
 	replicaServerAddress := "localhost:50052"  // Address of the replica server
+	
+	logFile, err := os.OpenFile("../serverLogUser.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+    if err != nil {
+        log.Fatalf("error opening log file: %v", err)
+    }
+    defer logFile.Close()
+
+    // Use `=` if `logger` was already declared earlier
+    logger := log.New(logFile, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
 
 	node := &Node{
 		NodeID:      clientID,
 		Balance:     randomIntBetween(1000, 10000),
 		TimesBidded: 0,
+		logger:          logger,
 	}
 
 	// Initially, try to connect to the primary server
-	err := node.ConnectToPrimary(primaryServerAddress)
+	err = node.ConnectToPrimary(primaryServerAddress)
 	if err != nil {
 		log.Printf("Failed to connect to primary server: %v", err)
 		// If primary connection fails, attempt to connect to the replica server
@@ -200,12 +210,7 @@ func main() {
 	}
 	defer node.conn.Close()
 
-	logFile, err := os.OpenFile("../serverLogUser.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		log.Fatalf("error opening log file: %v", err)
-	}
-	defer logFile.Close()
-	logger := log.New(logFile, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	
 
 	
 	logger.Printf("BALANCE: %v, NodeID: %v\n", node.Balance, node.NodeID)

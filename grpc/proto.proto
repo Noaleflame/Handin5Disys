@@ -9,7 +9,6 @@ service BiddingService {
     rpc GetHighestBid(HighestBidRequest) returns (HighestBidResponse);
     rpc GetTimesBidded(TimesBiddedRequest) returns (TimesBiddedResponse);
     rpc RegisterReplica (ReplicaRegisterRequest) returns (ReplicaRegisterResponse);
-    rpc UpdateHighestBid (UpdateBidRequest) returns (UpdateBidResponse);
     rpc Ping (PingRequest) returns (PingResponse);
     rpc getIsAuctionOngoing (RequestIsAuctionOngoing) returns (ResponseIsAuctionOngoing);
 }
