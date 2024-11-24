@@ -15,10 +15,9 @@ type Server struct {
 	CurrentHighestBid int32;
 	AuctionOngoing bool;
 	TimesBidded int32;
-	bidTimer          *time.Timer
-    replicas          []proto.BiddingServiceClient
-
-	//Nodes []node.Node;
+	bidTimer *time.Timer
+    replicas []proto.BiddingServiceClient
+	NodesId []string;
 }
 
 func (s Server)BeginAuction() {
@@ -58,10 +57,16 @@ func (s *Server) GetTimesBidded(ctx context.Context, req *proto.TimesBiddedReque
 }
 
 func (s *Server) PlaceBid(ctx context.Context, req *proto.BidRequest) (*proto.BidResponse,error) {
+
+	if !s.isNodeRegistered(req.NodeID) {
+		s.NodesId = append(s.NodesId, req.NodeID)
+		fmt.Printf("Node registered: %s\n", req.NodeID)
+	}
+
 	if req.Amount <= s.CurrentHighestBid {
 		return &proto.BidResponse{
-			Ack: proto.AckStatus_FAIL, // Set the Ack status to FAIL
-			Comment:"Bid was below Current highest bid", // Set the comment
+			Ack: proto.AckStatus_FAIL, 
+			Comment:"Bid was below Current highest bid", 
 		}, nil
 	}
 
@@ -69,9 +74,18 @@ func (s *Server) PlaceBid(ctx context.Context, req *proto.BidRequest) (*proto.Bi
 	s.TimesBidded++
 	s.resetTimer()
 	return &proto.BidResponse{
-		Ack: proto.AckStatus_SUCCESS, // Set the Ack status to FAIL
-		Comment:"The bid was successful", // Set the comment
+		Ack: proto.AckStatus_SUCCESS, 
+		Comment:"The bid was successful", 
 	}, nil
+}
+
+func (s *Server) isNodeRegistered(nodeID string) bool {
+	for _, id := range s.NodesId {
+		if id == nodeID {
+			return true
+		}
+	}
+	return false
 }
 
 func main () {

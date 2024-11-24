@@ -6,6 +6,7 @@ import (
 	proto "handin5/grpc"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"google.golang.org/grpc"
@@ -43,7 +44,7 @@ func (n *Node) PlaceBid(client proto.BiddingServiceClient) {
 		amount = randomIntBetween(n.CurrentHighestBid, n.CurrentHighestBid + 100)
 		//amount = randomIntBetween(n.CurrentHighestBid, n.Balance)
 	}
-	resp, err := client.PlaceBid(context.Background(), &proto.BidRequest{Amount: amount})
+	resp, err := client.PlaceBid(context.Background(), &proto.BidRequest{Amount: amount, NodeID: n.NodeID})
 	if err != nil {
 		log.Fatalf("failed to place bid")
 	}
@@ -83,6 +84,8 @@ func (n *Node) GetTimesBidded(client proto.BiddingServiceClient) {
 
 func main () {
 
+	clientID := os.Args[1]
+
 	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("failed to connect: %v", err)
@@ -95,6 +98,7 @@ func main () {
 	node := &Node{
 		TimesBidded: 0,
 		Balance: randomIntBetween(1000,10000),
+		NodeID: clientID,
 	}
 	fmt.Printf("BALANCE: %v\n", node.Balance)
 

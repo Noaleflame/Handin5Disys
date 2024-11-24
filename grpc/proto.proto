@@ -18,7 +18,9 @@ message TimesBiddedResponse {
 }
 
 message BidRequest {
-    int32 amount = 1;
+    string nodeID = 1;
+    int32 amount = 2;
+
 }
 
 message BidResponse {
