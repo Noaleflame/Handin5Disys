@@ -19,10 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BiddingService_PlaceBid_FullMethodName       = "/BiddingService/PlaceBid"
-	BiddingService_GetResult_FullMethodName      = "/BiddingService/GetResult"
-	BiddingService_GetHighestBid_FullMethodName  = "/BiddingService/GetHighestBid"
-	BiddingService_GetTimesBidded_FullMethodName = "/BiddingService/GetTimesBidded"
+	BiddingService_PlaceBid_FullMethodName            = "/BiddingService/PlaceBid"
+	BiddingService_GetResult_FullMethodName           = "/BiddingService/GetResult"
+	BiddingService_GetHighestBid_FullMethodName       = "/BiddingService/GetHighestBid"
+	BiddingService_GetTimesBidded_FullMethodName      = "/BiddingService/GetTimesBidded"
+	BiddingService_RegisterReplica_FullMethodName     = "/BiddingService/RegisterReplica"
+	BiddingService_UpdateHighestBid_FullMethodName    = "/BiddingService/UpdateHighestBid"
+	BiddingService_Ping_FullMethodName                = "/BiddingService/Ping"
+	BiddingService_GetIsAuctionOngoing_FullMethodName = "/BiddingService/getIsAuctionOngoing"
 )
 
 // BiddingServiceClient is the client API for BiddingService service.
@@ -33,6 +37,10 @@ type BiddingServiceClient interface {
 	GetResult(ctx context.Context, in *ResultRequest, opts ...grpc.CallOption) (*ResultResponse, error)
 	GetHighestBid(ctx context.Context, in *HighestBidRequest, opts ...grpc.CallOption) (*HighestBidResponse, error)
 	GetTimesBidded(ctx context.Context, in *TimesBiddedRequest, opts ...grpc.CallOption) (*TimesBiddedResponse, error)
+	RegisterReplica(ctx context.Context, in *ReplicaRegisterRequest, opts ...grpc.CallOption) (*ReplicaRegisterResponse, error)
+	UpdateHighestBid(ctx context.Context, in *UpdateBidRequest, opts ...grpc.CallOption) (*UpdateBidResponse, error)
+	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	GetIsAuctionOngoing(ctx context.Context, in *RequestIsAuctionOngoing, opts ...grpc.CallOption) (*ResponseIsAuctionOngoing, error)
 }
 
 type biddingServiceClient struct {
@@ -83,6 +91,46 @@ func (c *biddingServiceClient) GetTimesBidded(ctx context.Context, in *TimesBidd
 	return out, nil
 }
 
+func (c *biddingServiceClient) RegisterReplica(ctx context.Context, in *ReplicaRegisterRequest, opts ...grpc.CallOption) (*ReplicaRegisterResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReplicaRegisterResponse)
+	err := c.cc.Invoke(ctx, BiddingService_RegisterReplica_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *biddingServiceClient) UpdateHighestBid(ctx context.Context, in *UpdateBidRequest, opts ...grpc.CallOption) (*UpdateBidResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateBidResponse)
+	err := c.cc.Invoke(ctx, BiddingService_UpdateHighestBid_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *biddingServiceClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PingResponse)
+	err := c.cc.Invoke(ctx, BiddingService_Ping_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *biddingServiceClient) GetIsAuctionOngoing(ctx context.Context, in *RequestIsAuctionOngoing, opts ...grpc.CallOption) (*ResponseIsAuctionOngoing, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ResponseIsAuctionOngoing)
+	err := c.cc.Invoke(ctx, BiddingService_GetIsAuctionOngoing_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BiddingServiceServer is the server API for BiddingService service.
 // All implementations must embed UnimplementedBiddingServiceServer
 // for forward compatibility.
@@ -91,6 +139,10 @@ type BiddingServiceServer interface {
 	GetResult(context.Context, *ResultRequest) (*ResultResponse, error)
 	GetHighestBid(context.Context, *HighestBidRequest) (*HighestBidResponse, error)
 	GetTimesBidded(context.Context, *TimesBiddedRequest) (*TimesBiddedResponse, error)
+	RegisterReplica(context.Context, *ReplicaRegisterRequest) (*ReplicaRegisterResponse, error)
+	UpdateHighestBid(context.Context, *UpdateBidRequest) (*UpdateBidResponse, error)
+	Ping(context.Context, *PingRequest) (*PingResponse, error)
+	GetIsAuctionOngoing(context.Context, *RequestIsAuctionOngoing) (*ResponseIsAuctionOngoing, error)
 	mustEmbedUnimplementedBiddingServiceServer()
 }
 
@@ -112,6 +164,18 @@ func (UnimplementedBiddingServiceServer) GetHighestBid(context.Context, *Highest
 }
 func (UnimplementedBiddingServiceServer) GetTimesBidded(context.Context, *TimesBiddedRequest) (*TimesBiddedResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTimesBidded not implemented")
+}
+func (UnimplementedBiddingServiceServer) RegisterReplica(context.Context, *ReplicaRegisterRequest) (*ReplicaRegisterResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterReplica not implemented")
+}
+func (UnimplementedBiddingServiceServer) UpdateHighestBid(context.Context, *UpdateBidRequest) (*UpdateBidResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateHighestBid not implemented")
+}
+func (UnimplementedBiddingServiceServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedBiddingServiceServer) GetIsAuctionOngoing(context.Context, *RequestIsAuctionOngoing) (*ResponseIsAuctionOngoing, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetIsAuctionOngoing not implemented")
 }
 func (UnimplementedBiddingServiceServer) mustEmbedUnimplementedBiddingServiceServer() {}
 func (UnimplementedBiddingServiceServer) testEmbeddedByValue()                        {}
@@ -206,6 +270,78 @@ func _BiddingService_GetTimesBidded_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BiddingService_RegisterReplica_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReplicaRegisterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BiddingServiceServer).RegisterReplica(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BiddingService_RegisterReplica_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BiddingServiceServer).RegisterReplica(ctx, req.(*ReplicaRegisterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BiddingService_UpdateHighestBid_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBidRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BiddingServiceServer).UpdateHighestBid(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BiddingService_UpdateHighestBid_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BiddingServiceServer).UpdateHighestBid(ctx, req.(*UpdateBidRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BiddingService_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BiddingServiceServer).Ping(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BiddingService_Ping_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BiddingServiceServer).Ping(ctx, req.(*PingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _BiddingService_GetIsAuctionOngoing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestIsAuctionOngoing)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BiddingServiceServer).GetIsAuctionOngoing(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BiddingService_GetIsAuctionOngoing_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BiddingServiceServer).GetIsAuctionOngoing(ctx, req.(*RequestIsAuctionOngoing))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BiddingService_ServiceDesc is the grpc.ServiceDesc for BiddingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -228,6 +364,22 @@ var BiddingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTimesBidded",
 			Handler:    _BiddingService_GetTimesBidded_Handler,
+		},
+		{
+			MethodName: "RegisterReplica",
+			Handler:    _BiddingService_RegisterReplica_Handler,
+		},
+		{
+			MethodName: "UpdateHighestBid",
+			Handler:    _BiddingService_UpdateHighestBid_Handler,
+		},
+		{
+			MethodName: "Ping",
+			Handler:    _BiddingService_Ping_Handler,
+		},
+		{
+			MethodName: "getIsAuctionOngoing",
+			Handler:    _BiddingService_GetIsAuctionOngoing_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

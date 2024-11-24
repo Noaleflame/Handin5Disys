@@ -8,10 +8,20 @@ service BiddingService {
     rpc GetResult (ResultRequest) returns (ResultResponse);
     rpc GetHighestBid(HighestBidRequest) returns (HighestBidResponse);
     rpc GetTimesBidded(TimesBiddedRequest) returns (TimesBiddedResponse);
+    rpc RegisterReplica (ReplicaRegisterRequest) returns (ReplicaRegisterResponse);
+    rpc UpdateHighestBid (UpdateBidRequest) returns (UpdateBidResponse);
+    rpc Ping (PingRequest) returns (PingResponse);
+    rpc getIsAuctionOngoing (RequestIsAuctionOngoing) returns (ResponseIsAuctionOngoing);
+}
+
+message RequestIsAuctionOngoing {
+
+}
+message ResponseIsAuctionOngoing {
+    bool AuctionStillGoing = 1;
 }
 
 message TimesBiddedRequest{
-
 }
 message TimesBiddedResponse {
     int32 timesBidded = 1;
@@ -33,6 +43,7 @@ message ResultRequest {
 
 message ResultResponse {
     string winner = 1;
+    int32 winnerBid = 2;
 }
 
 message HighestBidRequest {
@@ -43,7 +54,28 @@ message HighestBidResponse {
     int32 HighesBid = 1;
 }
 
+message ReplicaRegisterRequest {
+    string replicaAddress = 1;
+}
 
+message ReplicaRegisterResponse {
+    bool success = 1;
+}
+
+message UpdateBidRequest {
+    int32 newHighestBid = 1;
+    int32 TimesBidded = 2;
+}
+
+message UpdateBidResponse {
+    bool success = 1;
+}
+
+message PingRequest {}
+
+message PingResponse {
+    bool alive = 1;
+}
 
 
 enum AckStatus {

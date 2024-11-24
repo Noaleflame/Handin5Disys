@@ -3,60 +3,64 @@ package main
 import (
 	"context"
 	"fmt"
-	proto "handin5/grpc"
+	"log"
 	"net"
+	"sync"
 	"time"
+
+	proto "handin5/grpc"
 
 	"google.golang.org/grpc"
 )
 
 type Server struct {
-	proto.UnimplementedBiddingServiceServer;
-	CurrentHighestBid int32;
-	AuctionOngoing bool;
-	TimesBidded int32;
-	bidTimer *time.Timer
-    replicas []proto.BiddingServiceClient
-	NodesId []string;
+	proto.UnimplementedBiddingServiceServer
+	CurrentHighestBid int32
+	AuctionOngoing    bool
+	TimesBidded       int32
+	bidTimer          *time.Timer
+	replicas          []proto.BiddingServiceClient
+	NodesId           []string
+	mu                sync.Mutex
 }
 
-func (s Server)BeginAuction() {
-	//Starts the auction and assigns default values
+func (s *Server) BeginAuction() {
 	s.AuctionOngoing = true
-	s.CurrentHighestBid = 0;
-	s.TimesBidded = 0;
+	s.CurrentHighestBid = 0
+	s.TimesBidded = 0
 	s.resetTimer()
-
-
 }
 
-func(s Server)StopAuction() {
+func (s *Server) StopAuction() {
 	s.AuctionOngoing = false
-	fmt.Print("Highest bid was: ")
-	fmt.Print(s.CurrentHighestBid)
+	fmt.Printf("Highest bid was: %d\n", s.CurrentHighestBid)
 }
+
 func (s *Server) resetTimer() {
 	if s.bidTimer != nil {
-		s.bidTimer.Stop() // Stop any existing timer
+		s.bidTimer.Stop()
 	}
-
-	// Create a new timer that will call StopAuction after 5 seconds
-	s.bidTimer = time.AfterFunc(15*time.Second, func() {
-		fmt.Println("No bids received in the last 8 seconds.")
+	s.bidTimer = time.AfterFunc(60*time.Second, func() {
+		fmt.Println("No bids received in the last 15 seconds.")
 		s.StopAuction()
 	})
 }
 
 func (s *Server) GetHighestBid(ctx context.Context, req *proto.HighestBidRequest) (*proto.HighestBidResponse, error) {
-    // Return the current highest bid
-    return &proto.HighestBidResponse{HighesBid: s.CurrentHighestBid}, nil
+	return &proto.HighestBidResponse{HighesBid: s.CurrentHighestBid}, nil
 }
 
-func (s *Server) GetTimesBidded(ctx context.Context, req *proto.TimesBiddedRequest) (*proto.TimesBiddedResponse, error){
+func (s *Server) GetResult(ctx context.Context, req *proto.ResultRequest) (*proto.ResultResponse, error) {
+	return &proto.ResultResponse{WinnerBid: s.CurrentHighestBid}, nil
+}
+
+func (s *Server) GetTimesBidded(ctx context.Context, req *proto.TimesBiddedRequest) (*proto.TimesBiddedResponse, error) {
 	return &proto.TimesBiddedResponse{TimesBidded: s.TimesBidded}, nil
 }
 
-func (s *Server) PlaceBid(ctx context.Context, req *proto.BidRequest) (*proto.BidResponse,error) {
+func (s *Server) PlaceBid(ctx context.Context, req *proto.BidRequest) (*proto.BidResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	if !s.isNodeRegistered(req.NodeID) {
 		s.NodesId = append(s.NodesId, req.NodeID)
@@ -65,17 +69,21 @@ func (s *Server) PlaceBid(ctx context.Context, req *proto.BidRequest) (*proto.Bi
 
 	if req.Amount <= s.CurrentHighestBid {
 		return &proto.BidResponse{
-			Ack: proto.AckStatus_FAIL, 
-			Comment:"Bid was below Current highest bid", 
+			Ack:     proto.AckStatus_FAIL,
+			Comment: "Bid was below Current highest bid",
 		}, nil
 	}
 
 	s.CurrentHighestBid = req.Amount
 	s.TimesBidded++
 	s.resetTimer()
+
+	// Notify replicas about the new highest bid
+	s.notifyReplicas(req.Amount, s.TimesBidded)
+
 	return &proto.BidResponse{
-		Ack: proto.AckStatus_SUCCESS, 
-		Comment:"The bid was successful", 
+		Ack:     proto.AckStatus_SUCCESS,
+		Comment: "The bid was successful",
 	}, nil
 }
 
@@ -88,30 +96,46 @@ func (s *Server) isNodeRegistered(nodeID string) bool {
 	return false
 }
 
-func main () {
-	// Create a listener on port 50051
-	lis, err := net.Listen("tcp", ":50051")
+func (s *Server) notifyReplicas(amount int32, timesBidded int32) {
+	for _, replica := range s.replicas {
+		_, err := replica.UpdateHighestBid(context.Background(), &proto.UpdateBidRequest{
+			NewHighestBid: amount,
+			TimesBidded:   timesBidded,
+		})
+		if err != nil {
+			fmt.Println("Failed to notify a replica:", err)
+		}
+	}
+}
+
+func (s *Server) Ping(ctx context.Context, req *proto.PingRequest) (*proto.PingResponse, error) {
+    fmt.Println("Received Ping from Replica")
+    return &proto.PingResponse{Alive: true}, nil
+}
+
+
+func (s *Server) GetIsAuctionOngoing(ctx context.Context, req *proto.RequestIsAuctionOngoing) (*proto.ResponseIsAuctionOngoing, error) {
+	return &proto.ResponseIsAuctionOngoing{AuctionStillGoing: s.AuctionOngoing}, nil
+}
+
+
+func main() {
+	listener, err := net.Listen("tcp", ":50051")
 	if err != nil {
-		fmt.Printf("failed to listen: %v", err)
-		return
+		log.Fatalf("failed to listen: %v", err)
 	}
 
-	// Create a new gRPC server
 	grpcServer := grpc.NewServer()
-	s := &Server{}
+	server := &Server{}
 
-	proto.RegisterBiddingServiceServer(grpcServer, s)
+	proto.RegisterBiddingServiceServer(grpcServer, server)
 
 	go func() {
-		// Start the auction after the server is running
-		s.BeginAuction()
+		server.BeginAuction()
 	}()
 
-	fmt.Println("Server started on port 50051")
-	if err := grpcServer.Serve(lis); err != nil {
-		fmt.Printf("failed to serve: %v", err)
+	fmt.Println("Primary server started on port 50051")
+	if err := grpcServer.Serve(listener); err != nil {
+		log.Fatalf("failed to serve: %v", err)
 	}
-
-	
-
 }
