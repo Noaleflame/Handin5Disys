@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -22,6 +23,8 @@ type Server struct {
 	replicas          []proto.BiddingServiceClient
 	NodesId           []string
 	mu                sync.Mutex
+	logger      *log.Logger
+
 }
 
 func (s *Server) BeginAuction() {
@@ -64,6 +67,7 @@ func (s *Server) PlaceBid(ctx context.Context, req *proto.BidRequest) (*proto.Bi
 	if !s.isNodeRegistered(req.NodeID) {
 		s.NodesId = append(s.NodesId, req.NodeID)
 		fmt.Printf("Node registered: %s\n", req.NodeID)
+		s.logger.Printf("Primary server started on port 50051")
 	}
 
 	if req.Amount <= s.CurrentHighestBid {
@@ -104,6 +108,15 @@ func (s *Server) GetIsAuctionOngoing(ctx context.Context, req *proto.RequestIsAu
 
 
 func main() {
+	logFile, err := os.OpenFile("../serverLogUser.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening log file: %v", err)
+	}
+	defer logFile.Close()
+
+	// Creates a new logger that writes to the file
+	logger := log.New(logFile, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+
 	listener, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -119,6 +132,8 @@ func main() {
 	}()
 
 	fmt.Println("Primary server started on port 50051")
+	logger.Printf("Primary server started on port 50051")
+
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

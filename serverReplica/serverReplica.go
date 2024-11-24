@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -22,6 +23,8 @@ type ReplicaServer struct {
 	mu                sync.Mutex
 	bidTimer          *time.Timer
 	AuctionOngoing    bool
+	logger      *log.Logger
+
 
 
 }
@@ -35,10 +38,13 @@ func (s *ReplicaServer) heartbeat() {
         _, err := s.primaryClient.Ping(context.Background(), &proto.PingRequest{})
         if err != nil {
             fmt.Println("Primary not responding.")
+			s.logger.Printf("Primary not responding.")
+
 
             // Retry logic
             if retryCount < maxRetries {
                 fmt.Printf("Retrying... (%d/%d)\n", retryCount+1, maxRetries)
+				s.logger.Printf("Retrying... (%d/%d)\n", retryCount+1, maxRetries)
                 retryCount++
                 time.Sleep(2 * time.Second) // Wait before retry
                 continue
@@ -46,6 +52,7 @@ func (s *ReplicaServer) heartbeat() {
 
             // After max retries, initiate leader election
             fmt.Println("Initiating leader election...")
+			s.logger.Printf("Initiating leader election...")
             s.initiateLeaderElection()
             return
 		}
@@ -109,6 +116,7 @@ func (s *ReplicaServer) initiateLeaderElection() {
 	defer s.mu.Unlock()
 
 	fmt.Println("Replica is taking over as the new leader...")
+	s.logger.Printf("Replica is taking over as the new leader...")
 	s.isLeader = true
 	s.primaryClient = nil
 }
@@ -148,6 +156,8 @@ func (s *ReplicaServer) resetTimer() {
 	}
 	s.bidTimer = time.AfterFunc(15*time.Second, func() {
 		fmt.Println("No bids received in the last 15 seconds.")
+		s.logger.Printf("No bids received in the last 15 seconds.")
+		
 		s.StopAuction()
 	})
 }
@@ -164,6 +174,15 @@ func (s *ReplicaServer) Ping(ctx context.Context, req *proto.PingRequest) (*prot
 }
 
 func main() {
+	logFile, err := os.OpenFile("serverLogUser.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening log file: %v", err)
+	}
+	defer logFile.Close()
+
+	// Creates a new logger that writes to the file
+	logger := log.New(logFile, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+
 	primaryAddress := "localhost:50051"
 
 	conn, err := grpc.Dial(primaryAddress, grpc.WithInsecure())
@@ -194,6 +213,7 @@ func main() {
 	proto.RegisterBiddingServiceServer(grpcServer, replica)
 
 	fmt.Println("Replica server started on port 50052")
+	logger.Printf("Replica server started on port 50052")
 	if err := grpcServer.Serve(listener); err != nil {
 		log.Fatalf("Failed to serve: %v", err)
 	}

@@ -24,6 +24,8 @@ type Node struct {
 	client            proto.BiddingServiceClient
 	conn              *grpc.ClientConn
 	isAuctionOngoing bool
+	logger      *log.Logger
+
 }
 
 func randomIntBetween(min int32, max int32) int32 {
@@ -101,6 +103,8 @@ func (n *Node) GetResult() {
 		log.Fatalf("failed to get Tresponse bidded: %v", err)
 	}
 	fmt.Print("The winner bid is :")
+	n.logger.Printf("The winner bid is :")
+	n.logger.Print(resp.GetWinnerBid())
 	fmt.Print(resp.GetWinnerBid())
 }
 
@@ -163,6 +167,7 @@ func (node *Node) ping(replicaServerAddress string, err error) {
 	if !node.PingPrimary() {
 		// If ping fails, try to reconnect to the replica server
 		fmt.Println("Primary server is unavailable, attempting to connect to the replica server...")
+		node.logger.Printf("Primary server is unavailable, attempting to connect to the replica server...")
 		time.Sleep(12 * time.Second)
 		node.ReconnectToPrimaryOnFailure(replicaServerAddress)
 		if err != nil {
@@ -172,6 +177,7 @@ func (node *Node) ping(replicaServerAddress string, err error) {
 }
 
 func main() {
+	
 	clientID := os.Args[1]
 	primaryServerAddress := "localhost:50051" // This should be the address of the current primary server
 	replicaServerAddress := "localhost:50052"  // Address of the replica server
@@ -194,7 +200,16 @@ func main() {
 	}
 	defer node.conn.Close()
 
-	fmt.Printf("BALANCE: %v\n", node.Balance)
+	logFile, err := os.OpenFile("../serverLogUser.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening log file: %v", err)
+	}
+	defer logFile.Close()
+	logger := log.New(logFile, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+
+	
+	logger.Printf("BALANCE: %v, NodeID: %v\n", node.Balance, node.NodeID)
+	fmt.Printf("BALANCE: %v, NodeID: %v\n", node.Balance, node.NodeID)
 
 	// Start the bidding loop
 	for {
@@ -221,7 +236,8 @@ func main() {
 			if node.CurrentHighestBid < node.Balance {
 				node.PlaceBid()
 				fmt.Println()
-				fmt.Printf("Placing bid : %v\n", node.CurrentBid)
+				fmt.Printf("Placing bid: %v, NodeID: %v\n", node.CurrentBid, node.NodeID)
+				node.logger.Printf("Placing bid: %v, NodeID: %v\n", node.CurrentBid, node.NodeID)
 			}
 			node.ping(replicaServerAddress, err)
 
